@@ -36,12 +36,7 @@ const Location: React.FC<LocationProps> = ({
   const [clicked, setClicked] = React.useState(false);
 
   function shorten(text: string) {
-    const first = text.replace(/,.*/, '').trim();
-    const short = first.substring(0, Math.min(20, first.length)).trim();
-    if (short.length < first.length) {
-      return `${short}...`;
-    }
-    return short;
+    return text;
   }
 
   return (
