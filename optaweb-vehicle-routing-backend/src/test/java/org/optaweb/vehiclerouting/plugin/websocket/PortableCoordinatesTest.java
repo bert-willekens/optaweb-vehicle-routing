@@ -16,17 +16,18 @@
 
 package org.optaweb.vehiclerouting.plugin.websocket;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.springframework.boot.test.json.JacksonTester;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 class PortableCoordinatesTest {
 
@@ -43,8 +44,7 @@ class PortableCoordinatesTest {
         // values are tweaked to enforce rounding to 5 decimal places
         PortableCoordinates portableCoordinates = new PortableCoordinates(
                 BigDecimal.valueOf(0.123454321),
-                BigDecimal.valueOf(-44.444445111)
-        );
+                BigDecimal.valueOf(-44.444445111));
         assertThat(json.write(portableCoordinates).getJson()).isEqualTo("{\"lat\":0.12345,\"lng\":-44.44445}");
     }
 
@@ -68,7 +68,7 @@ class PortableCoordinatesTest {
         assertThat(portableCoordinates.getLatitude()).isEqualTo(scaledDown.latitude());
         assertThat(portableCoordinates.getLongitude()).isEqualByComparingTo(scaledDown.longitude());
         // This would surprisingly fail because actual is -89 and expected is -89.0
-//        assertThat(portableCoordinates.getLongitude()).isEqualTo(scaledDown.longitude());
+        // assertThat(portableCoordinates.getLongitude()).isEqualTo(scaledDown.longitude());
     }
 
     @Test
@@ -79,20 +79,17 @@ class PortableCoordinatesTest {
         BigDecimal lon2 = BigDecimal.valueOf(-7.8);
         PortableCoordinates portableCoordinates = new PortableCoordinates(lat1, lon1);
 
-        // equals()
-        assertThat(portableCoordinates).isNotEqualTo(null);
-        assertThat(portableCoordinates).isNotEqualTo(new Coordinates(lat1, lon1));
-        assertThat(portableCoordinates).isNotEqualTo(new PortableCoordinates(lat1, lon2));
-        assertThat(portableCoordinates).isNotEqualTo(new PortableCoordinates(lat2, lon1));
-        assertThat(portableCoordinates).isEqualTo(portableCoordinates);
-        assertThat(portableCoordinates).isEqualTo(new PortableCoordinates(lat1, lon1));
-
-        // hasCode()
-        assertThat(portableCoordinates).hasSameHashCodeAs(new PortableCoordinates(lat1, lon1));
-
-        // toString()
-        assertThat(portableCoordinates.toString()).contains(
-                lat1.toPlainString(),
-                lon1.toPlainString());
+        assertThat(portableCoordinates)
+                // equals()
+                .isNotEqualTo(null)
+                .isNotEqualTo(new Coordinates(lat1, lon1))
+                .isNotEqualTo(new PortableCoordinates(lat1, lon2))
+                .isNotEqualTo(new PortableCoordinates(lat2, lon1))
+                .isEqualTo(portableCoordinates)
+                .isEqualTo(new PortableCoordinates(lat1, lon1))
+                // hasCode()
+                .hasSameHashCodeAs(new PortableCoordinates(lat1, lon1))
+                // toString()
+                .asString().contains(lat1.toPlainString(), lon1.toPlainString());
     }
 }

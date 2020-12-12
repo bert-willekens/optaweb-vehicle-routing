@@ -3,6 +3,7 @@
 exports[`App should render correctly 1`] = `
 <Fragment>
   <Connect(ConnectionManager) />
+  <Connect(Alerts) />
   <Page
     breadcrumb={null}
     className=""
@@ -32,11 +33,40 @@ exports[`App should render correctly 1`] = `
               "$$typeof": Symbol(react.memo),
               "WrappedComponent": [Function],
               "compare": null,
+              "displayName": "Connect(Demo)",
+              "type": [Function],
+            }
+          }
+          exact={true}
+          key="/demo"
+          path="/demo"
+        />
+        <Route
+          component={
+            Object {
+              "$$typeof": Symbol(react.memo),
+              "WrappedComponent": [Function],
+              "compare": null,
+              "displayName": "Connect(Demo)",
+              "type": [Function],
+            }
+          }
+          exact={true}
+          key="/"
+          path="/"
+        />
+        <Route
+          component={
+            Object {
+              "$$typeof": Symbol(react.memo),
+              "WrappedComponent": [Function],
+              "compare": null,
               "displayName": "Connect(Vehicles)",
               "type": [Function],
             }
           }
           exact={true}
+          key="/vehicles"
           path="/vehicles"
         />
         <Route
@@ -50,6 +80,7 @@ exports[`App should render correctly 1`] = `
             }
           }
           exact={true}
+          key="/visits"
           path="/visits"
         />
         <Route
@@ -63,20 +94,8 @@ exports[`App should render correctly 1`] = `
             }
           }
           exact={true}
-          path="/route"
-        />
-        <Route
-          component={
-            Object {
-              "$$typeof": Symbol(react.memo),
-              "WrappedComponent": [Function],
-              "compare": null,
-              "displayName": "Connect(Demo)",
-              "type": [Function],
-            }
-          }
-          exact={true}
-          path="/demo"
+          key="/routes"
+          path="/routes"
         />
       </Switch>
     </PageSection>

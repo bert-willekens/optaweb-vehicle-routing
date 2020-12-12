@@ -16,14 +16,12 @@
 
 import { Brand, PageHeader } from '@patternfly/react-core';
 import * as React from 'react';
-import Navigation from './Navigation';
-import Toolbar from './Toolbar';
+import NavigationWithRouter from './Navigation';
 
 const Header: React.FC = () => (
   <PageHeader
-    logo={<Brand src="./assets/images/optaPlannerLogo200px.png" alt="OptaPlanner Logo" />}
-    toolbar={<Toolbar />}
-    topNav={<Navigation />}
+    logo={<Brand src="./assets/images/optaPlannerLogoDarkBackground200px.png" alt="OptaPlanner Logo" />}
+    topNav={<NavigationWithRouter />}
   />
 );
 

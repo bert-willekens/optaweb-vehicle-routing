@@ -16,6 +16,18 @@
 
 package org.optaweb.vehiclerouting.plugin.planner;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningLocationFactory.testLocation;
+import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVehicleFactory.testVehicle;
+import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisitFactory.testVisit;
+import static org.optaweb.vehiclerouting.plugin.planner.domain.SolutionFactory.solutionFromVisits;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,29 +44,17 @@ import org.optaweb.vehiclerouting.service.route.RouteChangedEvent;
 import org.optaweb.vehiclerouting.service.route.ShallowRoute;
 import org.springframework.context.ApplicationEventPublisher;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningLocationFactory.testLocation;
-import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVehicleFactory.testVehicle;
-import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisitFactory.testVisit;
-import static org.optaweb.vehiclerouting.plugin.planner.domain.SolutionFactory.solutionFromVisits;
-
 @ExtendWith(MockitoExtension.class)
-class SolutionPublisherTest {
+class RouteChangedEventPublisherTest {
 
     @Mock
     private ApplicationEventPublisher publisher;
     @InjectMocks
-    private SolutionPublisher solutionPublisher;
+    private RouteChangedEventPublisher routeChangedEventPublisher;
 
     @Test
     void should_covert_solution_to_event_and_publish_it() {
-        solutionPublisher.publishSolution(SolutionFactory.emptySolution());
+        routeChangedEventPublisher.publishSolution(SolutionFactory.emptySolution());
         verify(publisher).publishEvent(any(RouteChangedEvent.class));
     }
 
@@ -62,7 +62,7 @@ class SolutionPublisherTest {
     void empty_solution_should_have_zero_routes_vehicles_etc() {
         VehicleRoutingSolution solution = SolutionFactory.emptySolution();
 
-        RouteChangedEvent event = SolutionPublisher.solutionToEvent(solution, this);
+        RouteChangedEvent event = RouteChangedEventPublisher.solutionToEvent(solution, this);
 
         assertThat(event.vehicleIds()).isEmpty();
         assertThat(event.depotId()).isEmpty();
@@ -77,7 +77,7 @@ class SolutionPublisherTest {
         PlanningVehicle vehicle = testVehicle(vehicleId);
         VehicleRoutingSolution solution = solutionFromVisits(singletonList(vehicle), null, emptyList());
 
-        RouteChangedEvent event = SolutionPublisher.solutionToEvent(solution, this);
+        RouteChangedEvent event = RouteChangedEventPublisher.solutionToEvent(solution, this);
 
         assertThat(event.vehicleIds()).containsExactly(vehicleId);
         assertThat(event.depotId()).isEmpty();
@@ -93,10 +93,9 @@ class SolutionPublisherTest {
         VehicleRoutingSolution solution = solutionFromVisits(
                 emptyList(),
                 new PlanningDepot(testLocation(depotId)),
-                singletonList(testVisit(visitId))
-        );
+                singletonList(testVisit(visitId)));
 
-        RouteChangedEvent event = SolutionPublisher.solutionToEvent(solution, this);
+        RouteChangedEvent event = RouteChangedEventPublisher.solutionToEvent(solution, this);
 
         assertThat(event.vehicleIds()).isEmpty();
         assertThat(event.depotId()).contains(depotId);
@@ -123,16 +122,14 @@ class SolutionPublisherTest {
         VehicleRoutingSolution solution = solutionFromVisits(
                 asList(vehicle1, vehicle2),
                 depot,
-                asList(visit1, visit2)
-        );
+                asList(visit1, visit2));
 
-        /* Send both vehicles to both visits
-         * V1
-         *   \
-         *    |---> visit1 ---> visit2
-         *   /
-         * V2
-         */
+        // Send both vehicles to both visits
+        // V1
+        //   \
+        //    |---> visit1 ---> visit2
+        //   /
+        // V2
         for (PlanningVehicle vehicle : solution.getVehicleList()) {
             vehicle.setNextVisit(visit1);
             visit1.setPreviousStandstill(vehicle);
@@ -144,7 +141,7 @@ class SolutionPublisherTest {
         solution.setScore(HardSoftLongScore.ofSoft(softScore));
 
         // act
-        RouteChangedEvent event = SolutionPublisher.solutionToEvent(solution, this);
+        RouteChangedEvent event = RouteChangedEventPublisher.solutionToEvent(solution, this);
 
         // assert
         assertThat(event.routes()).hasSameSizeAs(solution.getVehicleList());
@@ -171,11 +168,10 @@ class SolutionPublisherTest {
         VehicleRoutingSolution solution = solutionFromVisits(
                 singletonList(vehicle),
                 new PlanningDepot(testLocation(1)),
-                singletonList(testVisit(3))
-        );
+                singletonList(testVisit(3)));
 
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> SolutionPublisher.solutionToEvent(solution, this))
+                .isThrownBy(() -> RouteChangedEventPublisher.solutionToEvent(solution, this))
                 .withMessageContaining("Visit");
     }
 
@@ -186,7 +182,7 @@ class SolutionPublisherTest {
         VehicleRoutingSolution solution = solutionFromVisits(singletonList(vehicle), depot, emptyList());
         vehicle.setDepot(null);
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> SolutionPublisher.solutionToEvent(solution, this))
+                .isThrownBy(() -> RouteChangedEventPublisher.solutionToEvent(solution, this))
                 .withMessageContaining("Vehicle");
     }
 }

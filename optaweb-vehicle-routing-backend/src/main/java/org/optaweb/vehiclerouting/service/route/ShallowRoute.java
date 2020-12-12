@@ -16,11 +16,12 @@
 
 package org.optaweb.vehiclerouting.service.route;
 
+import static java.util.stream.Collectors.joining;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // TODO maybe remove this once we fork planning domain from optaplanner-examples
@@ -51,6 +52,7 @@ public class ShallowRoute {
 
     /**
      * Create shallow route.
+     *
      * @param vehicleId vehicle ID
      * @param depotId depot ID
      * @param visitIds visit IDs
@@ -65,7 +67,7 @@ public class ShallowRoute {
     public String toString() {
         String route = Stream.concat(Stream.of(depotId), visitIds.stream())
                 .map(Object::toString)
-                .collect(Collectors.joining("->", "[", "]"));
+                .collect(joining("->", "[", "]"));
         return vehicleId + ": " + route;
     }
 }

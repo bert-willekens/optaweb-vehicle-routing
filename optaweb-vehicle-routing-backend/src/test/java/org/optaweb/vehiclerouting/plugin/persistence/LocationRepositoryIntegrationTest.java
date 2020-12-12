@@ -16,22 +16,19 @@
 
 package org.optaweb.vehiclerouting.plugin.persistence;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+
 import java.math.BigDecimal;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.optaweb.vehiclerouting.domain.Location;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 @DataJpaTest
-@ExtendWith(SpringExtension.class)
 class LocationRepositoryIntegrationTest {
 
     @Autowired
@@ -52,10 +49,10 @@ class LocationRepositoryIntegrationTest {
         final BigDecimal minLongitude = maxLongitude.negate();
         final String description = "...";
 
-        LocationEntity minLocation = new LocationEntity(minLatitude, minLongitude, description);
-        LocationEntity maxLocation = new LocationEntity(maxLatitude, maxLongitude, description);
-        crudRepository.save(minLocation);
-        crudRepository.save(maxLocation);
+        LocationEntity minLocation = new LocationEntity(0, minLatitude, minLongitude, description);
+        LocationEntity maxLocation = new LocationEntity(0, maxLatitude, maxLongitude, description);
+        assertThat(crudRepository.save(minLocation).getId()).isNotZero();
+        assertThat(crudRepository.save(maxLocation).getId()).isNotZero();
 
         assertThat(crudRepository.findById(minLocation.getId())).get().isEqualTo(minLocation);
         assertThat(crudRepository.findById(maxLocation.getId())).get().isEqualTo(maxLocation);
@@ -97,8 +94,7 @@ class LocationRepositoryIntegrationTest {
                 .orElseThrow(IllegalStateException::new);
         Location testLocation = new Location(
                 testEntity.getId(),
-                new Coordinates(testEntity.getLatitude(), testEntity.getLongitude())
-        );
+                new Coordinates(testEntity.getLatitude(), testEntity.getLongitude()));
 
         assertThat(repository.locations())
                 .hasSize(locationCount)

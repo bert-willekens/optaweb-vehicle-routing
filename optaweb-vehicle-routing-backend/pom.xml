@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.optaweb.vehiclerouting</groupId>
     <artifactId>optaweb-vehicle-routing</artifactId>
-    <version>7.38.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaweb-vehicle-routing-backend</artifactId>
@@ -32,12 +32,6 @@
   <name>OptaWeb Vehicle Routing Backend</name>
 
   <properties>
-    <!--
-      Do not fail on Checkstyle errors when building locally to interrupt development as little as possible.
-      To enforce code style, build will fail on Checkstyle errors when running in CI environment (see profile below).
-    -->
-    <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
-    <java.version>1.8</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
@@ -84,7 +78,7 @@
     </dependency>
     <!--
       Add JAXB API dependency that's been deprecated in Java 9 and dropped in Java 11. See
-      https://stackoverflow.com/questions/43574426/how-to-resolve-java-lang-noclassdeffounderror-javax-xml-bind-jaxbexception-in-j
+      https://stackoverflow.com/questions/43574426/how-to-resolve-java-lang-noclassdeffounderror-javax-xml-bind-jaxbexception-in-j.
     -->
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
@@ -96,13 +90,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <!-- Needed because kie-parent depends on hamcrest-core. -->
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -117,6 +104,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
     </dependency>
     <!-- Enable Spring Boot Automatic Restart, see Development Guide in Readme to learn how to use it. -->
     <dependency>
@@ -124,7 +112,7 @@
       <artifactId>spring-boot-devtools</artifactId>
       <optional>true</optional>
     </dependency>
-    <!-- Include annotation processor that generates metadata for @ConfigurationProperties -->
+    <!-- Include annotation processor that generates metadata for @ConfigurationProperties. -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-configuration-processor</artifactId>
@@ -133,6 +121,11 @@
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -145,9 +138,8 @@
         <configuration>
           <compilerArgs>
             <!--
-              Visit https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html
-              to learn more about javac warnings
-             -->
+              Visit https://docs.oracle.com/en/java/javase/11/tools/javac.html to learn more about javac warnings.
+            -->
             <arg>-Xlint:all</arg>
             <arg>-Xlint:-processing</arg>
             <arg>-Xlint:-serial</arg>
@@ -161,7 +153,7 @@
           <!--
             Required due to the "repackage" goal of spring-boot-maven-plugin, as the maven-failsafe-plugin cannot
             find classes in the fat jar. For more details see:
-            https://sandor-nemeth.github.io/2017/10/16/integration-tests-with-spring-boot-classnotfoundexception.html
+            https://sandor-nemeth.github.io/2017/10/16/integration-tests-with-spring-boot-classnotfoundexception.html.
           -->
           <additionalClasspathElements>
             <additionalClasspathElement>${project.build.outputDirectory}</additionalClasspathElement>
@@ -174,36 +166,6 @@
         <configuration>
           <show>package</show>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <executions>
-          <!--
-            Disable execution defined in kie-parent.
-            Unfortunately, it's not possible to just override its configuration as the combine.self attribute is not
-            allowed on the configuration element.
-           -->
-          <execution>
-            <id>validate</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>validate-optaweb-vehicle-routing-backend</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <configLocation>config/checkstyle/Checker.xml</configLocation>
-              <failOnViolation>${checkstyle.failOnViolation}</failOnViolation>
-              <logViolationsToConsole>true</logViolationsToConsole>
-              <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <includeResources>true</includeResources>
-              <includeTestResources>true</includeTestResources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -245,9 +207,9 @@
               </dependency>
             </dependencies>
             <!--
-              kie-parent contains Pitest configuration that doesn't work well for this project and it's not possible
-              to change it without a complete override (combine.self="override"), for example excludedClasses,
-              timeoutConstant.
+              optaplanner-build-parent contains Pitest configuration that doesn't work well for this project
+              and it's not possible to change it without a complete override (combine.self="override"),
+              for example excludedClasses, timeoutConstant.
             -->
             <configuration>
               <reportsDirectory>local/pit-reports</reportsDirectory>
@@ -291,36 +253,6 @@
                 </goals>
               </execution>
             </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- Fail the build if there are Checkstyle errors only when running in CI environment. -->
-    <profile>
-      <id>checkstyleCI</id>
-      <activation>
-        <property>
-          <name>env.CI</name>
-        </property>
-      </activation>
-      <properties>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
-      </properties>
-    </profile>
-
-    <!--
-      To move the coverage measurement from Travis to Jenkins, add the repository name to
-      SONARCLOUD_ENABLED_REPOSITORIES in
-      https://github.com/kiegroup/kie-jenkins-scripts/blob/master/job-dsls/jobs/pr_jobs.groovy
-    -->
-    <profile>
-      <id>run-code-coverage</id> <!-- Do not change. This exact ID is used in Jenkins jobs. -->
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

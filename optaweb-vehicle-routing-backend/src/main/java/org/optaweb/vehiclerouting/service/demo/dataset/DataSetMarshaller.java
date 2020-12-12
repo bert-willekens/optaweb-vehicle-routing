@@ -16,20 +16,23 @@
 
 package org.optaweb.vehiclerouting.service.demo.dataset;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.optaweb.vehiclerouting.domain.LocationData;
 import org.optaweb.vehiclerouting.domain.RoutingProblem;
 import org.optaweb.vehiclerouting.domain.VehicleData;
 import org.optaweb.vehiclerouting.domain.VehicleFactory;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * Data set marshaller using the YAML format.
@@ -48,6 +51,7 @@ public class DataSetMarshaller {
 
     /**
      * Constructor for testing purposes.
+     *
      * @param mapper usually a mock object mapper
      */
     DataSetMarshaller(ObjectMapper mapper) {
@@ -56,6 +60,7 @@ public class DataSetMarshaller {
 
     /**
      * Unmarshal routing problem from a reader.
+     *
      * @param reader a reader
      * @return routing problem
      */
@@ -67,6 +72,7 @@ public class DataSetMarshaller {
 
     /**
      * Marshal routing problem to string.
+     *
      * @param routingProblem routing problem
      * @return string containing the marshaled routing problem
      */
@@ -96,12 +102,10 @@ public class DataSetMarshaller {
         dataSet.setDepot(routingProblem.depot().map(DataSetMarshaller::toDataSet).orElse(null));
         dataSet.setVehicles(routingProblem.vehicles().stream()
                 .map(DataSetMarshaller::toDataSet)
-                .collect(Collectors.toList())
-        );
+                .collect(toList()));
         dataSet.setVisits(routingProblem.visits().stream()
                 .map(DataSetMarshaller::toDataSet)
-                .collect(Collectors.toList())
-        );
+                .collect(toList()));
         return dataSet;
     }
 
@@ -109,8 +113,7 @@ public class DataSetMarshaller {
         return new DataSetLocation(
                 locationData.description(),
                 locationData.coordinates().latitude().doubleValue(),
-                locationData.coordinates().longitude().doubleValue()
-        );
+                locationData.coordinates().longitude().doubleValue());
     }
 
     static DataSetVehicle toDataSet(VehicleData vehicleData) {
@@ -120,17 +123,21 @@ public class DataSetMarshaller {
     static RoutingProblem toDomain(DataSet dataSet) {
         return new RoutingProblem(
                 Optional.ofNullable(dataSet.getName()).orElse(""),
-                dataSet.getVehicles().stream().map(DataSetMarshaller::toDomain).collect(Collectors.toList()),
+                Optional.ofNullable(dataSet.getVehicles()).orElse(Collections.emptyList())
+                        .stream()
+                        .map(DataSetMarshaller::toDomain)
+                        .collect(toList()),
                 Optional.ofNullable(dataSet.getDepot()).map(DataSetMarshaller::toDomain).orElse(null),
-                dataSet.getVisits().stream().map(DataSetMarshaller::toDomain).collect(Collectors.toList())
-        );
+                Optional.ofNullable(dataSet.getVisits()).orElse(Collections.emptyList())
+                        .stream()
+                        .map(DataSetMarshaller::toDomain)
+                        .collect(toList()));
     }
 
     static LocationData toDomain(DataSetLocation dataSetLocation) {
         return new LocationData(
                 Coordinates.valueOf(dataSetLocation.getLatitude(), dataSetLocation.getLongitude()),
-                dataSetLocation.getLabel()
-        );
+                dataSetLocation.getLabel());
     }
 
     static VehicleData toDomain(DataSetVehicle dataSetVehicle) {

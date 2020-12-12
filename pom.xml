@@ -21,9 +21,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.kie</groupId>
-    <artifactId>kie-parent</artifactId>
-    <version>7.38.0-SNAPSHOT</version>
+    <groupId>org.optaplanner</groupId>
+    <artifactId>optaplanner-build-parent</artifactId>
+    <version>8.1.0-SNAPSHOT</version>
+    <relativePath/>
   </parent>
 
   <groupId>org.optaweb.vehiclerouting</groupId>
@@ -42,11 +43,12 @@
   </modules>
 
   <properties>
-    <!-- Define JaCoCo agent argLine property to avoid Surefire failure when JaCoCo is not enabled. -->
-    <jacoco.agent.argLine/>
+    <version.com.graphhopper>0.13.0-pre13</version.com.graphhopper>
     <version.com.h2database>1.4.199</version.com.h2database>
-    <version.org.mockito>3.1.0</version.org.mockito>
-    <version.org.postgresql>42.2.5</version.org.postgresql>
+    <version.com.neovisionaries>1.27</version.com.neovisionaries>
+    <version.frontend-maven-plugin>1.10.0</version.frontend-maven-plugin>
+    <version.node>v12.16.2</version.node>
+    <version.npm>6.14.4</version.npm>
   </properties>
 
   <dependencyManagement>
@@ -82,23 +84,16 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <dependency>
-        <groupId>org.optaplanner</groupId>
-        <artifactId>optaplanner-bom</artifactId>
-        <version>${version.org.optaplanner}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <!-- Dependencies not managed by kie-parent and version overrides -->
-      <dependency>
-        <groupId>com.fasterxml.jackson.dataformat</groupId>
-        <artifactId>jackson-dataformat-yaml</artifactId>
-        <version>2.9.10</version>
-      </dependency>
+      <!-- Dependencies not managed by optaplanner-build-parent and version overrides -->
       <dependency>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-reader-osm</artifactId>
-        <version>0.13.0-pre13</version>
+        <version>${version.com.graphhopper}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.neovisionaries</groupId>
+        <artifactId>nv-i18n</artifactId>
+        <version>${version.com.neovisionaries}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -107,38 +102,19 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-maven-plugin</artifactId>
-          <version>${version.org.springframework.boot}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
           <executions>
             <execution>
-              <id>jacoco-prepare-agent</id>
-              <goals>
-                <goal>prepare-agent</goal>
-              </goals>
-              <configuration>
-                <propertyName>jacoco.agent.argLine</propertyName>
-              </configuration>
-            </execution>
-            <execution>
-              <id>jacoco-generate-report</id>
-              <goals>
-                <goal>report</goal>
-              </goals>
+              <id>analyze-only</id>
+              <phase>none</phase>
             </execution>
           </executions>
         </plugin>
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <!-- Append jacoco.agent.argLine property populated by JaCoCo's prepare-agent goal. -->
-            <argLine>@{jacoco.agent.argLine}</argLine>
-          </configuration>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${version.org.springframework.boot}</version>
         </plugin>
       </plugins>
     </pluginManagement>

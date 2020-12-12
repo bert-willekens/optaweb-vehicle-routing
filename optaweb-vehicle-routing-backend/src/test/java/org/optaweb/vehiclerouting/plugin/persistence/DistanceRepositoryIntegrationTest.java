@@ -16,19 +16,16 @@
 
 package org.optaweb.vehiclerouting.plugin.persistence;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.optaweb.vehiclerouting.domain.Location;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ExtendWith(SpringExtension.class)
 class DistanceRepositoryIntegrationTest {
 
     @Autowired
@@ -53,6 +50,28 @@ class DistanceRepositoryIntegrationTest {
 
         crudRepository.deleteById(key);
         assertThat(crudRepository.count()).isZero();
+    }
+
+    static DistanceEntity distance(long fromId, long toId) {
+        return new DistanceEntity(new DistanceKey(fromId, toId), 1L);
+    }
+
+    @Test
+    void delete_by_fromId_or_toId() {
+        DistanceEntity distance23 = distance(2, 3);
+        DistanceEntity distance32 = distance(3, 2);
+
+        crudRepository.save(distance(1, 2));
+        crudRepository.save(distance(2, 1));
+        crudRepository.save(distance23);
+        crudRepository.save(distance32);
+        crudRepository.save(distance(3, 1));
+        crudRepository.save(distance(1, 3));
+
+        assertThat(crudRepository.count()).isEqualTo(6);
+        crudRepository.deleteByFromIdOrToId(1L);
+        assertThat(crudRepository.count()).isEqualTo(2);
+        assertThat(crudRepository.findAll()).containsExactly(distance23, distance32);
     }
 
     @Test

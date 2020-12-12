@@ -16,6 +16,11 @@
 
 package org.optaweb.vehiclerouting.plugin.persistence;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -28,11 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.optaweb.vehiclerouting.domain.Location;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class DistanceRepositoryImplTest {
 
@@ -42,8 +42,6 @@ class DistanceRepositoryImplTest {
     private DistanceRepositoryImpl repository;
     @Captor
     private ArgumentCaptor<DistanceEntity> distanceEntityArgumentCaptor;
-    @Mock
-    private DistanceEntity distanceEntity;
 
     private final Location from = new Location(1, Coordinates.valueOf(7, -4.0));
     private final Location to = new Location(2, Coordinates.valueOf(5, 9.0));
@@ -62,9 +60,9 @@ class DistanceRepositoryImplTest {
     @Test
     void should_return_distance_when_entity_is_found() {
         DistanceKey distanceKey = new DistanceKey(from.id(), to.id());
+        long distance = 10305;
+        DistanceEntity distanceEntity = new DistanceEntity(distanceKey, distance);
         when(crudRepository.findById(distanceKey)).thenReturn(Optional.of(distanceEntity));
-        final long distance = 10305;
-        when(distanceEntity.getDistance()).thenReturn(distance);
         assertThat(repository.getDistance(from, to)).isEqualTo(distance);
     }
 
@@ -76,5 +74,17 @@ class DistanceRepositoryImplTest {
                 // Shouldn't be necessary but improves mutation coverage report because Pitest does -(x + 1) mutation,
                 // which turns -1 into -0, so this test wouldn't kill that mutation without the following:
                 .isNotZero();
+    }
+
+    @Test
+    void should_delete_distance_by_location_id() {
+        repository.deleteDistances(from);
+        verify(crudRepository).deleteByFromIdOrToId(from.id());
+    }
+
+    @Test
+    void should_delete_all_distances() {
+        repository.deleteAll();
+        verify(crudRepository).deleteAll();
     }
 }

@@ -16,9 +16,10 @@
 
 package org.optaweb.vehiclerouting.plugin.persistence;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.optaweb.vehiclerouting.domain.Coordinates;
@@ -43,10 +44,9 @@ class LocationRepositoryImpl implements LocationRepository {
     @Override
     public Location createLocation(Coordinates coordinates, String description) {
         LocationEntity locationEntity = repository.save(
-                new LocationEntity(coordinates.latitude(), coordinates.longitude(), description)
-        );
+                new LocationEntity(0, coordinates.latitude(), coordinates.longitude(), description));
         Location location = toDomain(locationEntity);
-        logger.info("Created {}", location);
+        logger.info("Created location {}.", location.fullDescription());
         return location;
     }
 
@@ -54,7 +54,7 @@ class LocationRepositoryImpl implements LocationRepository {
     public List<Location> locations() {
         return StreamSupport.stream(repository.findAll().spliterator(), false)
                 .map(LocationRepositoryImpl::toDomain)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     @Override
@@ -62,10 +62,9 @@ class LocationRepositoryImpl implements LocationRepository {
         Optional<LocationEntity> maybeLocation = repository.findById(id);
         maybeLocation.ifPresent(locationEntity -> repository.deleteById(id));
         LocationEntity locationEntity = maybeLocation.orElseThrow(
-                () -> new IllegalArgumentException("Location{id=" + id + "} doesn't exist")
-        );
+                () -> new IllegalArgumentException("Location{id=" + id + "} doesn't exist"));
         Location location = toDomain(locationEntity);
-        logger.info("Deleted {}", location);
+        logger.info("Deleted location {}.", location.fullDescription());
         return location;
     }
 
@@ -83,7 +82,6 @@ class LocationRepositoryImpl implements LocationRepository {
         return new Location(
                 locationEntity.getId(),
                 new Coordinates(locationEntity.getLatitude(), locationEntity.getLongitude()),
-                locationEntity.getDescription()
-        );
+                locationEntity.getDescription());
     }
 }

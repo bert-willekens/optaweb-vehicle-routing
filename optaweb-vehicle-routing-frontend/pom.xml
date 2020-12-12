@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.optaweb.vehiclerouting</groupId>
     <artifactId>optaweb-vehicle-routing</artifactId>
-    <version>7.38.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaweb-vehicle-routing-frontend</artifactId>
@@ -39,6 +39,19 @@
 
   <build>
     <finalName>optaweb-vehicle-routing-frontend</finalName>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.github.eirslett</groupId>
+          <artifactId>frontend-maven-plugin</artifactId>
+          <version>${version.frontend-maven-plugin}</version>
+          <configuration>
+            <nodeVersion>${version.node}</nodeVersion>
+            <npmVersion>${version.npm}</npmVersion>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>com.github.eirslett</groupId>
@@ -63,7 +76,7 @@
           </execution>
           <execution>
             <id>lock-treatment-tool execution</id>
-            <phase>compile</phase>
+            <phase>initialize</phase>
             <goals>
               <goal>npm</goal>
             </goals>
@@ -73,11 +86,7 @@
           </execution>
           <execution>
             <id>npm install</id>
-            <!--
-              Using compile phase so that `npm install` doesn't run during sonar analysis,
-              which is bound to generate-resources in kie-parent.
-            -->
-            <phase>compile</phase>
+            <phase>initialize</phase>
             <goals>
               <goal>npm</goal>
             </goals>

@@ -25,5 +25,7 @@ public interface DistanceMatrix {
 
     DistanceMatrixRow addLocation(Location location);
 
+    void removeLocation(Location location);
+
     void clear();
 }

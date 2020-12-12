@@ -16,8 +16,6 @@
 
 package org.optaweb.vehiclerouting.domain;
 
-import java.util.Objects;
-
 /**
  * Travel cost (distance between two {@link Location locations} or the length of a {@link Route route}).
  */
@@ -32,6 +30,7 @@ public class Distance {
 
     /**
      * Create a distance of the given milliseconds.
+     *
      * @param millis must be positive or zero
      * @return distance
      */
@@ -48,6 +47,7 @@ public class Distance {
 
     /**
      * Distance in milliseconds.
+     *
      * @return positive number or zero
      */
     public long millis() {
@@ -68,7 +68,7 @@ public class Distance {
 
     @Override
     public int hashCode() {
-        return Objects.hash(millis);
+        return Long.hashCode(millis);
     }
 
     @Override
@@ -78,7 +78,6 @@ public class Distance {
                 millis / 3600_000,
                 millis / 60_000 % 60,
                 millis / 1000 % 60,
-                millis % 1000
-        );
+                millis % 1000);
     }
 }

@@ -16,6 +16,8 @@
 
 package org.optaweb.vehiclerouting.service.vehicle;
 
+import static java.util.Comparator.comparingLong;
+
 import java.util.Objects;
 import java.util.Optional;
 
@@ -60,7 +62,7 @@ public class VehicleService {
     }
 
     public synchronized void removeAnyVehicle() {
-        Optional<Vehicle> first = vehicleRepository.vehicles().stream().min((o1, o2) -> (int) (o1.id() - o2.id()));
+        Optional<Vehicle> first = vehicleRepository.vehicles().stream().min(comparingLong(Vehicle::id));
         first.ifPresent(vehicle -> {
             Vehicle removed = vehicleRepository.removeVehicle(vehicle.id());
             optimizer.removeVehicle(removed);
@@ -74,8 +76,7 @@ public class VehicleService {
 
     public void changeCapacity(long vehicleId, int capacity) {
         Vehicle vehicle = vehicleRepository.find(vehicleId).orElseThrow(() -> new IllegalArgumentException(
-                "Can't remove Vehicle{id=" + vehicleId + "} because it doesn't exist"
-        ));
+                "Can't remove Vehicle{id=" + vehicleId + "} because it doesn't exist"));
         Vehicle updatedVehicle = VehicleFactory.createVehicle(vehicle.id(), vehicle.name(), capacity);
         vehicleRepository.update(updatedVehicle);
         optimizer.changeCapacity(updatedVehicle);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,24 @@
 
 package org.optaweb.vehiclerouting.plugin.websocket;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.optaweb.vehiclerouting.domain.RoutingPlan;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
-class WebSocketRoutingPlanPublisherTest {
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.optaweb.vehiclerouting.service.error.ErrorMessage;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-    @Mock
-    private SimpMessagingTemplate webSocket;
-    @InjectMocks
-    private WebSocketRoutingPlanPublisher routePublisher;
+@ExtendWith(MockitoExtension.class)
+class WebSocketErrorMessageSenderTest {
 
     @Test
-    void publish() {
-        routePublisher.publish(RoutingPlan.empty());
-        verify(webSocket).convertAndSend(anyString(), any(PortableRoutingPlan.class));
+    void should_send_consumed_message_over_websocket(@Mock SimpMessagingTemplate webSocket) {
+        ErrorMessage message = ErrorMessage.of("id", "error");
+        new WebSocketErrorMessageSender(webSocket).consumeMessage(message);
+        verify(webSocket).convertAndSend(
+                WebSocketErrorMessageSender.TOPIC_ERROR,
+                PortableErrorMessage.fromMessage(message));
     }
 }

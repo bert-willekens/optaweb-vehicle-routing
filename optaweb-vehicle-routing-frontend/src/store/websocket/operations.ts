@@ -16,6 +16,8 @@
 
 import { demoOperations } from '../demo';
 import { FinishLoadingAction } from '../demo/types';
+import { messageActions } from '../message';
+import { MessageAction } from '../message/types';
 import { routeOperations } from '../route';
 import { UpdateRouteAction } from '../route/types';
 import { serverOperations } from '../server';
@@ -26,6 +28,7 @@ import { WebSocketAction } from './types';
 
 type ConnectClientThunkAction =
   | WebSocketAction
+  | MessageAction
   | UpdateRouteAction
   | FinishLoadingAction
   | ServerInfoAction;
@@ -44,12 +47,15 @@ export const connectClient: ThunkCommandFactory<void, ConnectClientThunkAction> 
         client.subscribeToServerInfo((serverInfo) => {
           dispatch(serverOperations.serverInfo(serverInfo));
         });
+        client.subscribeToErrorTopic((errorMessage) => {
+          dispatch(messageActions.receiveMessage(errorMessage));
+        });
         client.subscribeToRoute((plan) => {
           dispatch(routeOperations.updateRoute(plan));
           if (getState().demo.isLoading) {
             // TODO handle the case when serverInfo doesn't contain demo with the given name
             //      (that could only be possible due to a bug in the code)
-            const demo = getState().serverInfo.demos.filter(value => value.name === getState().demo.demoName)[0];
+            const demo = getState().serverInfo.demos.filter((value) => value.name === getState().demo.demoName)[0];
             if (plan.visits.length === demo.visits) {
               dispatch(demoOperations.finishLoading());
             }

@@ -16,11 +16,14 @@
 
 package org.optaweb.vehiclerouting.service.route;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.optaweb.vehiclerouting.Profiles.NOT_TEST;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.optaweb.vehiclerouting.domain.Location;
@@ -37,8 +40,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-import static org.optaweb.vehiclerouting.Profiles.NOT_TEST;
-
 /**
  * Handles route updates emitted by optimization plugin.
  */
@@ -49,7 +50,7 @@ public class RouteListener implements ApplicationListener<RouteChangedEvent> {
     private static final Logger logger = LoggerFactory.getLogger(RouteListener.class);
 
     private final Router router;
-    private final RoutePublisher publisher;
+    private final RoutingPlanConsumer routingPlanConsumer;
     private final VehicleRepository vehicleRepository;
     private final LocationRepository locationRepository;
 
@@ -59,12 +60,11 @@ public class RouteListener implements ApplicationListener<RouteChangedEvent> {
     @Autowired
     RouteListener(
             Router router,
-            RoutePublisher publisher,
+            RoutingPlanConsumer routingPlanConsumer,
             VehicleRepository vehicleRepository,
-            LocationRepository locationRepository
-    ) {
+            LocationRepository locationRepository) {
         this.router = router;
-        this.publisher = publisher;
+        this.routingPlanConsumer = routingPlanConsumer;
         this.vehicleRepository = vehicleRepository;
         this.locationRepository = locationRepository;
         bestRoutingPlan = RoutingPlan.empty();
@@ -79,9 +79,9 @@ public class RouteListener implements ApplicationListener<RouteChangedEvent> {
             //  be published if revision numbers match) to avoid looking for missing/extra vehicles/visits.
             //  This will also make it possible to get rid of the try-catch approach.
             Map<Long, Vehicle> vehicleMap = event.vehicleIds().stream()
-                    .collect(Collectors.toMap(vehicleId -> vehicleId, this::findVehicleById));
+                    .collect(toMap(vehicleId -> vehicleId, this::findVehicleById));
             Map<Long, Location> visitMap = event.visitIds().stream()
-                    .collect(Collectors.toMap(visitId -> visitId, this::findLocationById));
+                    .collect(toMap(visitId -> visitId, this::findLocationById));
 
             List<RouteWithTrack> routes = event.routes().stream()
                     // list of deep locations
@@ -90,19 +90,17 @@ public class RouteListener implements ApplicationListener<RouteChangedEvent> {
                             findLocationById(shallowRoute.depotId),
                             shallowRoute.visitIds.stream()
                                     .map(visitMap::get)
-                                    .collect(Collectors.toList())
-                    ))
+                                    .collect(toList())))
                     // add tracks
                     .map(route -> new RouteWithTrack(route, track(route.depot(), route.visits())))
-                    .collect(Collectors.toList());
+                    .collect(toList());
             bestRoutingPlan = new RoutingPlan(
                     event.distance(),
                     new ArrayList<>(vehicleMap.values()),
                     depot,
                     new ArrayList<>(visitMap.values()),
-                    routes
-            );
-            publisher.publish(bestRoutingPlan);
+                    routes);
+            routingPlanConsumer.consumePlan(bestRoutingPlan);
         } catch (IllegalStateException e) {
             logger.warn("Discarding an outdated routing plan: {}", e.toString());
         }
@@ -110,14 +108,12 @@ public class RouteListener implements ApplicationListener<RouteChangedEvent> {
 
     private Vehicle findVehicleById(long id) {
         return vehicleRepository.find(id).orElseThrow(() -> new IllegalStateException(
-                "Vehicle {id=" + id + "} not found in the repository")
-        );
+                "Vehicle {id=" + id + "} not found in the repository"));
     }
 
     private Location findLocationById(long id) {
         return locationRepository.find(id).orElseThrow(() -> new IllegalStateException(
-                "Location {id=" + id + "} not found in the repository")
-        );
+                "Location {id=" + id + "} not found in the repository"));
     }
 
     private List<List<Coordinates>> track(Location depot, List<Location> route) {

@@ -33,6 +33,7 @@ public class VehicleData {
 
     /**
      * Vehicle's name (unique description).
+     *
      * @return vehicle's name
      */
     public String name() {
@@ -41,6 +42,7 @@ public class VehicleData {
 
     /**
      * Vehicle's capacity.
+     *
      * @return vehicle's capacity
      */
     public int capacity() {
@@ -67,9 +69,6 @@ public class VehicleData {
 
     @Override
     public String toString() {
-        return "VehicleData{" +
-                "name='" + name + '\'' +
-                ", capacity=" + capacity +
-                '}';
+        return name.isEmpty() ? "<noname>" : "'" + name + "'";
     }
 }

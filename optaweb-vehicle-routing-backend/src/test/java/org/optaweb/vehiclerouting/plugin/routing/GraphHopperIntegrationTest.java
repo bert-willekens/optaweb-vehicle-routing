@@ -16,13 +16,16 @@
 
 package org.optaweb.vehiclerouting.plugin.routing;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import java.nio.file.Path;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoderFactory;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class GraphHopperIntegrationTest {
 
@@ -35,6 +38,6 @@ class GraphHopperIntegrationTest {
         graphHopper.setGraphHopperLocation(graphhopperDir.toString());
         graphHopper.setOSMFile(GraphHopperIntegrationTest.class.getResource(OSM_PBF).getFile());
         graphHopper.setEncodingManager(EncodingManager.create(FlagEncoderFactory.CAR));
-        graphHopper.importOrLoad();
+        assertThatCode(graphHopper::importOrLoad).doesNotThrowAnyException();
     }
 }

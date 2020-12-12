@@ -25,7 +25,6 @@ jest.mock('webstomp-client');
 beforeEach(() => {
   jest.resetAllMocks();
 
-  // @ts-ignore
   (over as unknown as jest.MockInstance<Client, [string, Options?]>).mockReturnValue(mockClient);
 });
 
@@ -33,7 +32,7 @@ const mockClient = {
   connected: false,
   isBinary: false,
   partialData: '',
-  subscriptions: null,
+  subscriptions: {},
   ws: null,
   connect: jest.fn(),
   disconnect: jest.fn(),
@@ -160,6 +159,20 @@ describe('WebSocketClient', () => {
     client.subscribeToRoute(callback);
 
     expect(mockClient.subscribe.mock.calls[0][0]).toBe('/topic/route');
+    expect(typeof mockClient.subscribe.mock.calls[0][1]).toBe('function');
+
+    mockClient.subscribe.mock.calls[0][1]({ body: JSON.stringify(payload) });
+    expect(callback).toHaveBeenCalledWith(payload);
+  });
+
+  it('subscribeToErrorTopic() should subscribe with callback', () => {
+    const callback = jest.fn();
+    const payload = { value: 'test' };
+
+    client.connect(onSuccess, onError);
+    client.subscribeToErrorTopic(callback);
+
+    expect(mockClient.subscribe.mock.calls[0][0]).toBe('/topic/error');
     expect(typeof mockClient.subscribe.mock.calls[0][1]).toBe('function');
 
     mockClient.subscribe.mock.calls[0][1]({ body: JSON.stringify(payload) });

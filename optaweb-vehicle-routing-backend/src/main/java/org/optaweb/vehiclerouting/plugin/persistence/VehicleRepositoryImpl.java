@@ -16,9 +16,10 @@
 
 package org.optaweb.vehiclerouting.plugin.persistence;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.optaweb.vehiclerouting.domain.Vehicle;
@@ -43,31 +44,34 @@ public class VehicleRepositoryImpl implements VehicleRepository {
     public Vehicle createVehicle(int capacity) {
         long id = repository.save(new VehicleEntity(0, null, capacity)).getId();
         VehicleEntity vehicleEntity = repository.save(new VehicleEntity(id, "Vehicle " + id, capacity));
-        return toDomain(vehicleEntity);
+        Vehicle vehicle = toDomain(vehicleEntity);
+        logger.info("Created vehicle {}.", vehicle);
+        return vehicle;
     }
 
     @Override
     public Vehicle createVehicle(VehicleData vehicleData) {
         VehicleEntity vehicleEntity = repository.save(new VehicleEntity(0, vehicleData.name(), vehicleData.capacity()));
-        return toDomain(vehicleEntity);
+        Vehicle vehicle = toDomain(vehicleEntity);
+        logger.info("Created vehicle {}.", vehicle);
+        return vehicle;
     }
 
     @Override
     public List<Vehicle> vehicles() {
         return StreamSupport.stream(repository.findAll().spliterator(), false)
                 .map(VehicleRepositoryImpl::toDomain)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     @Override
     public Vehicle removeVehicle(long id) {
         Optional<VehicleEntity> optionalVehicleEntity = repository.findById(id);
         VehicleEntity vehicleEntity = optionalVehicleEntity.orElseThrow(
-                () -> new IllegalArgumentException("Vehicle{id=" + id + "} doesn't exist")
-        );
+                () -> new IllegalArgumentException("Vehicle{id=" + id + "} doesn't exist"));
         repository.deleteById(id);
         Vehicle vehicle = toDomain(vehicleEntity);
-        logger.info("Deleted {}", vehicle);
+        logger.info("Deleted vehicle {}.", vehicle);
         return vehicle;
     }
 
@@ -90,7 +94,6 @@ public class VehicleRepositoryImpl implements VehicleRepository {
         return VehicleFactory.createVehicle(
                 vehicleEntity.getId(),
                 vehicleEntity.getName(),
-                vehicleEntity.getCapacity()
-        );
+                vehicleEntity.getCapacity());
     }
 }

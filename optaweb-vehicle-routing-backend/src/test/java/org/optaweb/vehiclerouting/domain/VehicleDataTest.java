@@ -16,10 +16,10 @@
 
 package org.optaweb.vehiclerouting.domain;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+
+import org.junit.jupiter.api.Test;
 
 class VehicleDataTest {
 
@@ -35,17 +35,18 @@ class VehicleDataTest {
 
         VehicleData vehicleData = new VehicleData(name, capacity);
 
-        // different name
-        assertThat(vehicleData).isNotEqualTo(new VehicleData("", capacity));
-        // different capacity
-        assertThat(vehicleData).isNotEqualTo(new VehicleData(name, capacity + 1));
-        // null
-        assertThat(vehicleData).isNotEqualTo(null);
-        // different type with equal properties
-        assertThat(vehicleData).isNotEqualTo(new Vehicle(0, name, capacity));
-        // same object -> OK
-        assertThat(vehicleData).isEqualTo(vehicleData);
-        // same properties -> OK
-        assertThat(vehicleData).isEqualTo(new VehicleData(name, capacity));
+        assertThat(vehicleData)
+                // different name
+                .isNotEqualTo(new VehicleData("", capacity))
+                // different capacity
+                .isNotEqualTo(new VehicleData(name, capacity + 1))
+                // null
+                .isNotEqualTo(null)
+                // different type with equal properties
+                .isNotEqualTo(new Vehicle(0, name, capacity))
+                // same object -> OK
+                .isEqualTo(vehicleData)
+                // same properties -> OK
+                .isEqualTo(new VehicleData(name, capacity));
     }
 }

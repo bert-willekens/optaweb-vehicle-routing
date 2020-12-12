@@ -16,6 +16,16 @@
 
 package org.optaweb.vehiclerouting.plugin.planner;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.mockito.AdditionalAnswers.answer;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisitFactory.testVisit;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -35,50 +45,45 @@ import org.optaweb.vehiclerouting.plugin.planner.change.ChangeVehicleCapacity;
 import org.optaweb.vehiclerouting.plugin.planner.change.RemoveVehicle;
 import org.optaweb.vehiclerouting.plugin.planner.change.RemoveVisit;
 import org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVehicle;
+import org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVehicleFactory;
 import org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisit;
+import org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisitFactory;
 import org.optaweb.vehiclerouting.plugin.planner.domain.SolutionFactory;
 import org.optaweb.vehiclerouting.plugin.planner.domain.VehicleRoutingSolution;
-import org.springframework.core.task.AsyncTaskExecutor;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.AdditionalAnswers.answer;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisitFactory.testVisit;
+import org.springframework.core.task.AsyncListenableTaskExecutor;
+import org.springframework.util.concurrent.ListenableFuture;
 
 @ExtendWith(MockitoExtension.class)
 class SolverManagerTest {
+
+    private final VehicleRoutingSolution solution = SolutionFactory.emptySolution();
+    private final PlanningVehicle testVehicle = PlanningVehicleFactory.testVehicle(1);
+    private final PlanningVisit testVisit = PlanningVisitFactory.testVisit(1);
 
     @Captor
     private ArgumentCaptor<VehicleRoutingSolution> solutionArgumentCaptor;
     @Mock
     private BestSolutionChangedEvent<VehicleRoutingSolution> bestSolutionChangedEvent;
     @Mock
-    private Future<VehicleRoutingSolution> solverFuture;
+    private ListenableFuture<VehicleRoutingSolution> solverFuture;
 
     @Mock
     private Solver<VehicleRoutingSolution> solver;
     @Mock
-    private AsyncTaskExecutor executor;
+    private AsyncListenableTaskExecutor executor;
     @Mock
-    private SolutionPublisher solutionPublisher;
+    private RouteChangedEventPublisher routeChangedEventPublisher;
     @InjectMocks
     private SolverManager solverManager;
 
     private void returnSolverFutureWhenSolverIsStarted() {
         // always run the runnable submitted to executor (that's what every executor does)
         // we can then verify that solver.solve() has been called
-        when(executor.submit(any(SolverManager.SolvingTask.class))).thenAnswer(
+        when(executor.submitListenable(any(SolverManager.SolvingTask.class))).thenAnswer(
                 answer((Answer1<Future<VehicleRoutingSolution>, SolverManager.SolvingTask>) callable -> {
                     callable.call();
                     return solverFuture;
-                })
-        );
+                }));
     }
 
     @Test
@@ -96,7 +101,7 @@ class SolverManagerTest {
 
         // assert
         verify(bestSolutionChangedEvent, never()).getNewBestSolution();
-        verify(solutionPublisher, never()).publishSolution(any());
+        verify(routeChangedEventPublisher, never()).publishSolution(any());
     }
 
     @Test
@@ -107,7 +112,7 @@ class SolverManagerTest {
 
         solverManager.bestSolutionChanged(bestSolutionChangedEvent);
 
-        verify(solutionPublisher).publishSolution(solutionArgumentCaptor.capture());
+        verify(routeChangedEventPublisher).publishSolution(solutionArgumentCaptor.capture());
         VehicleRoutingSolution event = solutionArgumentCaptor.getValue();
         assertThat(event).isSameAs(solution);
     }
@@ -115,18 +120,18 @@ class SolverManagerTest {
     @Test
     void startSolver_should_start_solver() {
         returnSolverFutureWhenSolverIsStarted();
-        solverManager.startSolver(mock(VehicleRoutingSolution.class));
-        verify(solver).solve(any(VehicleRoutingSolution.class));
+        solverManager.startSolver(solution);
+        verify(solver).solve(solution);
 
         // cannot start solver that is already solving
         assertThatIllegalStateException()
-                .isThrownBy(() -> solverManager.startSolver(mock(VehicleRoutingSolution.class)));
+                .isThrownBy(() -> solverManager.startSolver(solution));
     }
 
     @Test
     void stopSolver_should_terminate_solver() {
         returnSolverFutureWhenSolverIsStarted();
-        solverManager.startSolver(mock(VehicleRoutingSolution.class));
+        solverManager.startSolver(solution);
         solverManager.stopSolver();
         verify(solver).terminateEarly();
 
@@ -141,12 +146,13 @@ class SolverManagerTest {
     void reset_interrupted_flag() throws ExecutionException, InterruptedException {
         returnSolverFutureWhenSolverIsStarted();
         // start solver
-        solverManager.startSolver(mock(VehicleRoutingSolution.class));
+        solverManager.startSolver(solution);
         when(solverFuture.isDone()).thenReturn(true);
         when(solverFuture.get()).thenThrow(InterruptedException.class);
 
+        PlanningVisit visit = testVisit(0);
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() -> solverManager.removeVisit(testVisit(0)));
+                .isThrownBy(() -> solverManager.removeVisit(visit));
         assertThat(Thread.interrupted()).isTrue();
 
         assertThatExceptionOfType(RuntimeException.class)
@@ -157,65 +163,65 @@ class SolverManagerTest {
     @Test
     void change_operations_should_fail_if_solver_has_not_started_yet() {
         assertThatIllegalStateException()
-                .isThrownBy(() -> solverManager.addVehicle(mock(PlanningVehicle.class)))
+                .isThrownBy(() -> solverManager.addVehicle(testVehicle))
                 .withMessageContaining("started");
         assertThatIllegalStateException()
-                .isThrownBy(() -> solverManager.removeVehicle(mock(PlanningVehicle.class)))
+                .isThrownBy(() -> solverManager.removeVehicle(testVehicle))
                 .withMessageContaining("started");
         assertThatIllegalStateException()
-                .isThrownBy(() -> solverManager.changeCapacity(mock(PlanningVehicle.class)))
+                .isThrownBy(() -> solverManager.changeCapacity(testVehicle))
                 .withMessageContaining("started");
         assertThatIllegalStateException()
-                .isThrownBy(() -> solverManager.addVisit(mock(PlanningVisit.class)))
+                .isThrownBy(() -> solverManager.addVisit(testVisit))
                 .withMessageContaining("started");
         assertThatIllegalStateException()
-                .isThrownBy(() -> solverManager.removeVisit(mock(PlanningVisit.class)))
+                .isThrownBy(() -> solverManager.removeVisit(testVisit))
                 .withMessageContaining("started");
     }
 
     @Test
     void change_operations_should_fail_is_solver_has_died() throws ExecutionException, InterruptedException {
         returnSolverFutureWhenSolverIsStarted();
-        solverManager.startSolver(mock(VehicleRoutingSolution.class));
+        solverManager.startSolver(solution);
         when(solverFuture.isDone()).thenReturn(true);
         when(solverFuture.get()).thenThrow(ExecutionException.class);
 
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() -> solverManager.addVehicle(mock(PlanningVehicle.class)))
+                .isThrownBy(() -> solverManager.addVehicle(testVehicle))
                 .withMessageContaining("died");
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() -> solverManager.removeVehicle(mock(PlanningVehicle.class)))
+                .isThrownBy(() -> solverManager.removeVehicle(testVehicle))
                 .withMessageContaining("died");
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() -> solverManager.changeCapacity(mock(PlanningVehicle.class)))
+                .isThrownBy(() -> solverManager.changeCapacity(testVehicle))
                 .withMessageContaining("died");
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() -> solverManager.addVisit(mock(PlanningVisit.class)))
+                .isThrownBy(() -> solverManager.addVisit(testVisit))
                 .withMessageContaining("died");
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() -> solverManager.removeVisit(mock(PlanningVisit.class)))
+                .isThrownBy(() -> solverManager.removeVisit(testVisit))
                 .withMessageContaining("died");
     }
 
     @Test
     void change_operations_should_submit_problem_fact_changes_to_solver() {
         returnSolverFutureWhenSolverIsStarted();
-        solverManager.startSolver(mock(VehicleRoutingSolution.class));
+        solverManager.startSolver(solution);
         when(solverFuture.isDone()).thenReturn(false);
 
-        solverManager.addVehicle(mock(PlanningVehicle.class));
+        solverManager.addVehicle(testVehicle);
         verify(solver).addProblemFactChange(any(AddVehicle.class));
 
-        solverManager.removeVehicle(mock(PlanningVehicle.class));
+        solverManager.removeVehicle(testVehicle);
         verify(solver).addProblemFactChange(any(RemoveVehicle.class));
 
-        solverManager.changeCapacity(mock(PlanningVehicle.class));
+        solverManager.changeCapacity(testVehicle);
         verify(solver).addProblemFactChange(any(ChangeVehicleCapacity.class));
 
-        solverManager.addVisit(mock(PlanningVisit.class));
+        solverManager.addVisit(testVisit);
         verify(solver).addProblemFactChange(any(AddVisit.class));
 
-        solverManager.removeVisit(mock(PlanningVisit.class));
+        solverManager.removeVisit(testVisit);
         verify(solver).addProblemFactChange(any(RemoveVisit.class));
     }
 }

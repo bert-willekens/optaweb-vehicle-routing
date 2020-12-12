@@ -16,16 +16,13 @@
 
 package org.optaweb.vehiclerouting.plugin.routing;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.graphhopper.GHRequest;
-import com.graphhopper.GHResponse;
-import com.graphhopper.reader.osm.GraphHopperOSM;
-import com.graphhopper.util.PointList;
-import com.graphhopper.util.shapes.BBox;
 import org.optaweb.vehiclerouting.domain.Coordinates;
+import org.optaweb.vehiclerouting.service.distance.DistanceCalculationException;
 import org.optaweb.vehiclerouting.service.distance.DistanceCalculator;
 import org.optaweb.vehiclerouting.service.region.BoundingBox;
 import org.optaweb.vehiclerouting.service.region.Region;
@@ -33,6 +30,12 @@ import org.optaweb.vehiclerouting.service.route.Router;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import com.graphhopper.GHRequest;
+import com.graphhopper.GHResponse;
+import com.graphhopper.reader.osm.GraphHopperOSM;
+import com.graphhopper.util.PointList;
+import com.graphhopper.util.shapes.BBox;
 
 /**
  * Provides geographical information needed for route optimization.
@@ -58,7 +61,7 @@ class GraphHopperRouter implements Router, DistanceCalculator, Region {
         PointList points = graphHopper.route(ghRequest).getBest().getPoints();
         return StreamSupport.stream(points.spliterator(), false)
                 .map(ghPoint3D -> Coordinates.valueOf(ghPoint3D.lat, ghPoint3D.lon))
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     @Override
@@ -71,7 +74,7 @@ class GraphHopperRouter implements Router, DistanceCalculator, Region {
         GHResponse ghResponse = graphHopper.route(ghRequest);
         // TODO return wrapper that can hold both the result and error explanation instead of throwing exception
         if (ghResponse.hasErrors()) {
-            throw new RuntimeException("No route", ghResponse.getErrors().get(0));
+            throw new DistanceCalculationException("No route from " + from + " to " + to, ghResponse.getErrors().get(0));
         }
         return ghResponse.getBest().getTime();
     }
@@ -81,7 +84,6 @@ class GraphHopperRouter implements Router, DistanceCalculator, Region {
         BBox bounds = graphHopper.getGraphHopperStorage().getBounds();
         return new BoundingBox(
                 Coordinates.valueOf(bounds.minLat, bounds.minLon),
-                Coordinates.valueOf(bounds.maxLat, bounds.maxLon)
-        );
+                Coordinates.valueOf(bounds.maxLat, bounds.maxLon));
     }
 }

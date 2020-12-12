@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-import { shallow } from 'enzyme';
-import toJson from 'enzyme-to-json';
-import * as React from 'react';
-import Toolbar from './Toolbar';
+package org.optaweb.vehiclerouting.service.route;
 
-describe('Toolbar component', () => {
-  it('should match snapshot', () => {
-    const toolbar = shallow(<Toolbar />);
-    expect(toJson(toolbar)).toMatchSnapshot();
-  });
-});
+import org.optaweb.vehiclerouting.domain.RoutingPlan;
+
+/**
+ * Consumes routing plans.
+ */
+public interface RoutingPlanConsumer {
+
+    /**
+     * Consume a routing plan.
+     *
+     * @param routingPlan routing plan
+     */
+    void consumePlan(RoutingPlan routingPlan);
+}

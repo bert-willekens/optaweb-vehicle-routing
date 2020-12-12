@@ -16,16 +16,16 @@
 
 package org.optaweb.vehiclerouting.domain;
 
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-
-import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 class RouteWithTrackTest {
 
@@ -47,9 +47,9 @@ class RouteWithTrackTest {
         ArrayList<List<Coordinates>> track = new ArrayList<>();
         track.add(Arrays.asList(Coordinates.valueOf(1.0, 2.0)));
 
-        RouteWithTrack routeWithTrack = new RouteWithTrack(route, track);
+        List<List<Coordinates>> routeTrack = new RouteWithTrack(route, track).track();
         assertThatExceptionOfType(UnsupportedOperationException.class)
-                .isThrownBy(() -> routeWithTrack.track().clear());
+                .isThrownBy(routeTrack::clear);
     }
 
     @Test

@@ -16,21 +16,22 @@
 
 package org.optaweb.vehiclerouting.domain;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.optaweb.vehiclerouting.domain.CountryCodeValidator.validate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.junit.jupiter.api.Test;
 
 class CountryCodeValidatorTest {
 
     @Test
     void should_fail_on_invalid_country_codes() {
         assertThatNullPointerException().isThrownBy(() -> validate(null));
+        assertThatNullPointerException().isThrownBy(() -> validate(Arrays.asList("US", null, "CA")));
         assertThatIllegalArgumentException().isThrownBy(() -> validate(Arrays.asList("XX")));
         assertThatIllegalArgumentException().isThrownBy(() -> validate(Arrays.asList("CZE")));
         assertThatIllegalArgumentException().isThrownBy(() -> validate(Arrays.asList("D")));

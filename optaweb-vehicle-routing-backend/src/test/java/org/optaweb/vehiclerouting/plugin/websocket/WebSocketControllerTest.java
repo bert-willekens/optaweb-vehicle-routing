@@ -16,6 +16,12 @@
 
 package org.optaweb.vehiclerouting.plugin.websocket;
 
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,16 +40,13 @@ import org.optaweb.vehiclerouting.domain.RoutingProblem;
 import org.optaweb.vehiclerouting.domain.Vehicle;
 import org.optaweb.vehiclerouting.domain.VehicleFactory;
 import org.optaweb.vehiclerouting.service.demo.DemoService;
+import org.optaweb.vehiclerouting.service.error.ErrorEvent;
 import org.optaweb.vehiclerouting.service.location.LocationService;
 import org.optaweb.vehiclerouting.service.region.BoundingBox;
 import org.optaweb.vehiclerouting.service.region.RegionService;
 import org.optaweb.vehiclerouting.service.route.RouteListener;
 import org.optaweb.vehiclerouting.service.vehicle.VehicleService;
-
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class WebSocketControllerTest {
@@ -53,13 +56,21 @@ class WebSocketControllerTest {
     @Mock
     private RegionService regionService;
     @Mock
-    private VehicleService vehicleService;
-    @Mock
     private LocationService locationService;
     @Mock
+    private VehicleService vehicleService;
+    @Mock
     private DemoService demoService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
     @InjectMocks
     private WebSocketController webSocketController;
+
+    @Test
+    void exception_handler_should_publish_error_event() {
+        webSocketController.handleException(new Exception("test exception"));
+        verify(eventPublisher).publishEvent(any(ErrorEvent.class));
+    }
 
     @Test
     void subscribeToRouteTopic() {
@@ -76,8 +87,7 @@ class WebSocketControllerTest {
                 singletonList(vehicle),
                 depot,
                 singletonList(visit),
-                singletonList(routeWithTrack)
-        );
+                singletonList(routeWithTrack));
         when(routeListener.getBestRoutingPlan()).thenReturn(plan);
 
         // act
@@ -116,8 +126,7 @@ class WebSocketControllerTest {
         assertThat(serverInfo.getCountryCodes()).isEqualTo(countryCodes);
         assertThat(serverInfo.getBoundingBox()).containsExactly(
                 PortableCoordinates.fromCoordinates(southWest),
-                PortableCoordinates.fromCoordinates(northEast)
-        );
+                PortableCoordinates.fromCoordinates(northEast));
         List<RoutingProblemInfo> demos = serverInfo.getDemos();
         assertThat(demos).hasSize(1);
         RoutingProblemInfo demo = demos.get(0);

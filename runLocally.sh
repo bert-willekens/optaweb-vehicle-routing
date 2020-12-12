@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Abort script if any simple command outside an if, while, &&, ||, etc. exists with a nonzero code.
+# Abort the script if any simple command outside an if, while, &&, ||, etc. exits with a non-zero status.
 set -e
 # If dir is empty, dir/* will expand to "" instead of "dir/*". This is useful when reading regions in interactive() and
 # either openstreetmap or graphhopper dir is empty.
@@ -90,7 +90,9 @@ function validate() {
 
 function run_optaweb() {
   declare -a args
+  args+=("--app.demo.data-set-dir=$dataset_dir")
   args+=("--app.persistence.h2-dir=$vrp_dir/db")
+  args+=("--app.persistence.h2-filename=${osm_file%.osm.pbf}")
   args+=("--app.routing.engine=$routing_engine")
   if [[ ${routing_engine} == "graphhopper" ]]
   then
@@ -411,12 +413,14 @@ rm -f ${error_log}
 readonly osm_dir=${vrp_dir}/openstreetmap
 readonly gh_dir=${vrp_dir}/graphhopper
 readonly cc_dir=${vrp_dir}/country_codes
+readonly dataset_dir=${vrp_dir}/dataset
 readonly cache_dir=${vrp_dir}/.cache
 readonly cache_geofabrik=${cache_dir}/geofabrik
 
 [[ -d ${osm_dir} ]] || mkdir "$osm_dir"
 [[ -d ${gh_dir} ]] || mkdir "$gh_dir"
 [[ -d ${cc_dir} ]] || mkdir "$cc_dir"
+[[ -d ${dataset_dir} ]] || mkdir "$dataset_dir"
 [[ -d ${cache_geofabrik} ]] || mkdir -p ${cache_geofabrik}
 
 declare routing_engine="graphhopper"

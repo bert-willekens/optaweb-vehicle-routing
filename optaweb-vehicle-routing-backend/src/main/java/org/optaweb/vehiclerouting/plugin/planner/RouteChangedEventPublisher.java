@@ -16,10 +16,11 @@
 
 package org.optaweb.vehiclerouting.plugin.planner;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.optaweb.vehiclerouting.domain.Distance;
 import org.optaweb.vehiclerouting.plugin.planner.domain.PlanningDepot;
@@ -39,19 +40,20 @@ import org.springframework.stereotype.Component;
  * components that listen for this type of event.
  */
 @Component
-class SolutionPublisher {
+class RouteChangedEventPublisher {
 
-    private static final Logger logger = LoggerFactory.getLogger(SolutionPublisher.class);
+    private static final Logger logger = LoggerFactory.getLogger(RouteChangedEventPublisher.class);
 
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    SolutionPublisher(ApplicationEventPublisher eventPublisher) {
+    RouteChangedEventPublisher(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
     }
 
     /**
      * Publish solution as a {@link RouteChangedEvent}.
+     *
      * @param solution solution
      */
     void publishSolution(VehicleRoutingSolution solution) {
@@ -62,14 +64,14 @@ class SolutionPublisher {
                 solution.getVehicleList().size(),
                 solution.getVisitList().size(),
                 event.distance(),
-                solution.getScore()
-        );
+                solution.getScore());
         logger.debug("Routes: {}", event.routes());
         eventPublisher.publishEvent(event);
     }
 
     /**
      * Convert a planning domain solution to an event that can be published.
+     *
      * @param solution solution
      * @param source source of the event
      * @return new event describing the solution
@@ -83,18 +85,18 @@ class SolutionPublisher {
                 vehicleIds(solution),
                 depotId(solution),
                 visitIds(solution),
-                routes
-        );
+                routes);
     }
 
     private static List<Long> visitIds(VehicleRoutingSolution solution) {
         return solution.getVisitList().stream()
                 .map(visit -> visit.getLocation().getId())
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     /**
      * Extract routes from the solution. Includes empty routes of vehicles that stay in the depot.
+     *
      * @param solution solution
      * @return one route per vehicle
      */
@@ -108,8 +110,7 @@ class SolutionPublisher {
             PlanningDepot depot = vehicle.getDepot();
             if (depot == null) {
                 throw new IllegalArgumentException(
-                        "Vehicle (id=" + vehicle.getId() + ") is not in the depot. That's not allowed"
-                );
+                        "Vehicle (id=" + vehicle.getId() + ") is not in the depot. That's not allowed");
             }
             List<Long> visits = new ArrayList<>();
             for (PlanningVisit visit : vehicle.getFutureVisits()) {
@@ -125,17 +126,19 @@ class SolutionPublisher {
 
     /**
      * Get IDs of vehicles in the solution.
+     *
      * @param solution the solution
      * @return vehicle IDs
      */
     private static List<Long> vehicleIds(VehicleRoutingSolution solution) {
         return solution.getVehicleList().stream()
                 .map(PlanningVehicle::getId)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     /**
      * Get solution's depot ID.
+     *
      * @param solution the solution in which to look for the depot
      * @return first depot ID from the solution or {@code null} if there are no depots
      */

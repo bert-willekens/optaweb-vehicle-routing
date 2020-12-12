@@ -16,6 +16,15 @@
 
 package org.optaweb.vehiclerouting.service.route;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -37,22 +46,13 @@ import org.optaweb.vehiclerouting.domain.VehicleFactory;
 import org.optaweb.vehiclerouting.service.location.LocationRepository;
 import org.optaweb.vehiclerouting.service.vehicle.VehicleRepository;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class RouteListenerTest {
 
     @Mock
     private Router router;
     @Mock
-    private RoutePublisher publisher;
+    private RoutingPlanConsumer routingPlanConsumer;
     @Mock
     private VehicleRepository vehicleRepository;
     @Mock
@@ -68,7 +68,7 @@ class RouteListenerTest {
     }
 
     @Test
-    void event_with_no_routes_should_be_published_as_an_empty_routing_plan() {
+    void event_with_no_routes_should_be_consumed_as_an_empty_routing_plan() {
         final long vehicleId = 12;
         final Vehicle vehicle = VehicleFactory.testVehicle(vehicleId);
         when(vehicleRepository.find(vehicleId)).thenReturn(Optional.of(vehicle));
@@ -78,12 +78,11 @@ class RouteListenerTest {
                 singletonList(vehicleId),
                 null,
                 emptyList(),
-                emptyList()
-        );
+                emptyList());
         routeListener.onApplicationEvent(event);
         verifyNoInteractions(router);
 
-        RoutingPlan routingPlan = verifyAndCapturePublishedPlan();
+        RoutingPlan routingPlan = verifyAndCaptureConsumedPlan();
         assertThat(routingPlan.vehicles()).containsExactly(vehicle);
         assertThat(routingPlan.depot()).isEmpty();
         assertThat(routingPlan.visits()).isEmpty();
@@ -91,7 +90,7 @@ class RouteListenerTest {
     }
 
     @Test
-    void event_with_no_visits_and_a_depot_should_be_published_as_plan_with_empty_routes() {
+    void event_with_no_visits_and_a_depot_should_be_consumed_as_plan_with_empty_routes() {
         final Coordinates depotCoordinates = Coordinates.valueOf(0.0, 0.1);
         final Location depot = new Location(1, depotCoordinates);
         final long vehicleId = 448;
@@ -106,13 +105,12 @@ class RouteListenerTest {
                 singletonList(vehicleId),
                 depot.id(),
                 emptyList(),
-                singletonList(route)
-        );
+                singletonList(route));
         routeListener.onApplicationEvent(event);
 
         verifyNoInteractions(router);
 
-        RoutingPlan routingPlan = verifyAndCapturePublishedPlan();
+        RoutingPlan routingPlan = verifyAndCaptureConsumedPlan();
         assertThat(routingPlan.vehicles()).containsExactly(vehicle);
         assertThat(routingPlan.depot()).contains(depot);
         assertThat(routingPlan.visits()).isEmpty();
@@ -125,7 +123,7 @@ class RouteListenerTest {
     }
 
     @Test
-    void listener_should_publish_routing_plan_when_an_update_event_occurs() {
+    void listener_should_pass_routing_plan_to_consumer_when_an_update_event_occurs() {
         final Coordinates depotCoordinates = Coordinates.valueOf(0.0, 0.1);
         final Coordinates visitCoordinates = Coordinates.valueOf(2.0, -0.2);
         final Coordinates checkpoint1 = Coordinates.valueOf(12, 12);
@@ -151,12 +149,11 @@ class RouteListenerTest {
                 singletonList(vehicleId),
                 depot.id(),
                 singletonList(visit.id()),
-                singletonList(route)
-        );
+                singletonList(route));
 
         routeListener.onApplicationEvent(event);
 
-        RoutingPlan routingPlan = verifyAndCapturePublishedPlan();
+        RoutingPlan routingPlan = verifyAndCaptureConsumedPlan();
         assertThat(routingPlan.distance()).isEqualTo(distance);
         assertThat(routingPlan.vehicles()).containsExactly(vehicle);
         assertThat(routingPlan.depot()).contains(depot);
@@ -187,8 +184,7 @@ class RouteListenerTest {
                 singletonList(vehicle.id()),
                 depot.id(),
                 singletonList(visit.id()),
-                singletonList(route)
-        );
+                singletonList(route));
 
         // precondition
         assertThat(routeListener.getBestRoutingPlan().isEmpty()).isTrue();
@@ -197,7 +193,7 @@ class RouteListenerTest {
         routeListener.onApplicationEvent(event);
 
         verify(router, never()).getPath(any(), any());
-        verify(publisher, never()).publish(any());
+        verify(routingPlanConsumer, never()).consumePlan(any());
 
         assertThat(routeListener.getBestRoutingPlan().isEmpty()).isTrue();
     }
@@ -217,8 +213,7 @@ class RouteListenerTest {
                 singletonList(vehicle.id()),
                 depot.id(),
                 singletonList(visit.id()),
-                singletonList(route)
-        );
+                singletonList(route));
 
         // precondition
         assertThat(routeListener.getBestRoutingPlan().isEmpty()).isTrue();
@@ -227,13 +222,13 @@ class RouteListenerTest {
         routeListener.onApplicationEvent(event);
 
         verify(router, never()).getPath(any(), any());
-        verify(publisher, never()).publish(any());
+        verify(routingPlanConsumer, never()).consumePlan(any());
 
         assertThat(routeListener.getBestRoutingPlan().isEmpty()).isTrue();
     }
 
-    private RoutingPlan verifyAndCapturePublishedPlan() {
-        verify(publisher).publish(routeArgumentCaptor.capture());
+    private RoutingPlan verifyAndCaptureConsumedPlan() {
+        verify(routingPlanConsumer).consumePlan(routeArgumentCaptor.capture());
         return routeArgumentCaptor.getValue();
     }
 }

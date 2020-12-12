@@ -18,8 +18,8 @@ package org.optaweb.vehiclerouting.plugin.planner.change;
 
 import java.util.Objects;
 
-import org.optaplanner.core.impl.score.director.ScoreDirector;
-import org.optaplanner.core.impl.solver.ProblemFactChange;
+import org.optaplanner.core.api.score.director.ScoreDirector;
+import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.optaweb.vehiclerouting.plugin.planner.domain.PlanningVisit;
 import org.optaweb.vehiclerouting.plugin.planner.domain.VehicleRoutingSolution;
 
@@ -61,8 +61,7 @@ public class RemoveVisit implements ProblemFactChange<VehicleRoutingSolution> {
                             + workingSolution.getVisitList()
                             + " doesn't contain the workingVisit ("
                             + workingVisit
-                            + "). This is a bug!"
-            );
+                            + "). This is a bug!");
         }
         scoreDirector.afterEntityRemoved(workingVisit);
 

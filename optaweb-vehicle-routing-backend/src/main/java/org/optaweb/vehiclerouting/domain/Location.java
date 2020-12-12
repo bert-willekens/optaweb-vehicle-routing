@@ -16,8 +16,6 @@
 
 package org.optaweb.vehiclerouting.domain;
 
-import java.util.Objects;
-
 /**
  * A unique location significant to the user.
  */
@@ -37,10 +35,20 @@ public class Location extends LocationData {
 
     /**
      * Location's ID.
+     *
      * @return unique ID
      */
     public long id() {
         return id;
+    }
+
+    /**
+     * Full description of the location including its ID, description and coordinates.
+     *
+     * @return full description
+     */
+    public String fullDescription() {
+        return "[" + id + "]: " + super.toString();
     }
 
     @Override
@@ -57,13 +65,11 @@ public class Location extends LocationData {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), id);
+        return Long.hashCode(id);
     }
 
     @Override
     public String toString() {
-        return "Location ["
-                + id +
-                "]: '" + description() + "'";
+        return description().isEmpty() ? Long.toString(id) : (id + ": '" + description() + "'");
     }
 }

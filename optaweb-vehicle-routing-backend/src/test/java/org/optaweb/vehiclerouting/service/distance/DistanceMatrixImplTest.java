@@ -16,6 +16,16 @@
 
 package org.optaweb.vehiclerouting.service.distance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import java.math.BigDecimal;
 
 import org.junit.jupiter.api.Test;
@@ -27,15 +37,6 @@ import org.optaweb.vehiclerouting.domain.Coordinates;
 import org.optaweb.vehiclerouting.domain.Distance;
 import org.optaweb.vehiclerouting.domain.Location;
 import org.optaweb.vehiclerouting.service.location.DistanceMatrixRow;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DistanceMatrixImplTest {
@@ -81,7 +82,10 @@ class DistanceMatrixImplTest {
         assertThat(matrixRow1.distanceTo(l9neg.id())).isEqualTo(Distance.ofMillis(10));
 
         // clear the map
+        assertThat(distanceMatrix.dimension()).isEqualTo(3);
         distanceMatrix.clear();
+        assertThat(distanceMatrix.dimension()).isZero();
+        verify(distanceRepository).deleteAll();
         Location l500 = location(500, 500);
         DistanceMatrixRow matrixRow500 = distanceMatrix.addLocation(l500);
         assertThatIllegalArgumentException().isThrownBy(() -> matrixRow500.distanceTo(l0.id()));
@@ -136,6 +140,28 @@ class DistanceMatrixImplTest {
         verify(distanceRepository, never()).saveDistance(any(Location.class), any(Location.class), anyLong());
         // no calculation
         verifyNoInteractions(distanceCalculator);
+    }
+
+    @Test
+    void should_remove_distance_row_from_matrix_and_repository_when_location_removed() {
+        // arrange
+        Location l1 = location(1, 1);
+        Location l2 = location(2, 2);
+        when(distanceRepository.getDistance(any(), any())).thenReturn(-1L);
+        when(distanceCalculator.travelTimeMillis(l1.coordinates(), l2.coordinates()))
+                .thenThrow(new DistanceCalculationException("dummy"));
+
+        distanceMatrix.addLocation(l1);
+        assertThatExceptionOfType(DistanceCalculationException.class).isThrownBy(() -> distanceMatrix.addLocation(l2));
+        assertThat(distanceMatrix.dimension()).isEqualTo(1);
+
+        // act & assert
+        distanceMatrix.removeLocation(l1);
+        assertThat(distanceMatrix.dimension()).isZero();
+        verify(distanceRepository).deleteDistances(l1);
+
+        distanceMatrix.addLocation(l2);
+        assertThat(distanceMatrix.dimension()).isEqualTo(1);
     }
 
     private static Location location(long id, int longitude) {

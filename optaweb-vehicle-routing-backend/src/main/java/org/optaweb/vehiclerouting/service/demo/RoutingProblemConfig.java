@@ -16,6 +16,8 @@
 
 package org.optaweb.vehiclerouting.service.demo;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -30,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.optaweb.vehiclerouting.domain.RoutingProblem;
@@ -45,10 +46,12 @@ import org.springframework.context.annotation.Configuration;
 class RoutingProblemConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(RoutingProblemConfig.class);
+    private final DemoProperties demoProperties;
     private final DataSetMarshaller dataSetMarshaller;
 
     @Autowired
-    RoutingProblemConfig(DataSetMarshaller dataSetMarshaller) {
+    RoutingProblemConfig(DemoProperties demoProperties, DataSetMarshaller dataSetMarshaller) {
+        this.demoProperties = demoProperties;
         this.dataSetMarshaller = dataSetMarshaller;
     }
 
@@ -63,8 +66,7 @@ class RoutingProblemConfig {
     private static Reader belgiumReader() {
         return new InputStreamReader(
                 DemoService.class.getResourceAsStream("belgium-cities.yaml"),
-                StandardCharsets.UTF_8
-        );
+                StandardCharsets.UTF_8);
     }
 
     private static boolean isReadableDir(Path path) {
@@ -74,12 +76,11 @@ class RoutingProblemConfig {
 
     private List<RoutingProblem> localDataSets() {
         // TODO watch the dir (and make this a service that has local/data resource as a dependency -> is testable)
-        Path dataSetDirPath = Paths.get("local/data");
+        Path dataSetDirPath = Paths.get(demoProperties.getDataSetDir());
         if (!isReadableDir(dataSetDirPath)) {
-            logger.info(
+            logger.warn(
                     "Data set directory '{}' doesn't exist or cannot be read. No external data sets will be loaded",
-                    dataSetDirPath.toAbsolutePath()
-            );
+                    dataSetDirPath.toAbsolutePath());
             return Collections.emptyList();
         }
 
@@ -98,7 +99,7 @@ class RoutingProblemConfig {
                     .filter(Objects::nonNull)
                     // TODO make unmarshalling exception checked, catch it and ignore broken files
                     .map(dataSetMarshaller::unmarshal)
-                    .collect(Collectors.toList());
+                    .collect(toList());
         } catch (IOException e) {
             throw new IllegalStateException("Cannot list directory " + dataSetDirPath, e);
         }

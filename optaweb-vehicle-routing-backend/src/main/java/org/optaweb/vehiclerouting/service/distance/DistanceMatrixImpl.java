@@ -55,16 +55,16 @@ class DistanceMatrixImpl implements DistanceMatrix {
         // distance to self is 0
         distancesToOthers.put(newLocation.id(), Distance.ZERO);
 
-        // for all entries (rows) in the matrix:
+        // For all entries (rows) in the matrix:
         matrix.entrySet().stream().parallel().forEach(distanceRow -> {
-            // entry key is the existing (other) location
+            // Entry key is the existing (other) location.
             Location other = distanceRow.getKey();
-            // entry value is the data (cells) in the row (distances from the entry key location to any other)
+            // Entry value is the data (cells) in the row (distances from the entry key location to any other).
             Map<Long, Distance> distancesFromOther = distanceRow.getValue();
-            // add a new cell to the row with the distance from the entry key location to the new location
-            // (results in a new column at the end of the loop)
+            // Add a new cell to the row with the distance from the entry key location to the new location
+            // (results in a new column at the end of the loop).
             distancesFromOther.put(newLocation.id(), calculateOrRestoreDistance(other, newLocation));
-            // add a cell the new distance's row
+            // Add a cell to the new distance's row.
             distancesToOthers.put(other.id(), calculateOrRestoreDistance(newLocation, other));
         });
 
@@ -92,7 +92,28 @@ class DistanceMatrixImpl implements DistanceMatrix {
     }
 
     @Override
+    public void removeLocation(Location location) {
+        // Remove the distance matrix row (distances from the removed location to others).
+        matrix.remove(location);
+        // TODO also remove the "column" of the matrix (distances from others to the removed location) to avoid memory
+        //  leak.
+        //  But this probably requires making DistanceMatrixRow immutable (otherwise there's a risk of NPEs in solver)
+        //  and update PlanningLocations' distance maps through problem fact changes.
+        distanceRepository.deleteDistances(location);
+    }
+
+    @Override
     public void clear() {
         matrix.clear();
+        distanceRepository.deleteAll();
+    }
+
+    /**
+     * Number of rows in the matrix.
+     *
+     * @return number of rows
+     */
+    public int dimension() {
+        return matrix.size();
     }
 }
